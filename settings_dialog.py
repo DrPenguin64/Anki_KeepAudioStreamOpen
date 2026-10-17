@@ -10,6 +10,7 @@ from aqt.qt import (
     QVBoxLayout,
 )
 from aqt.utils import showInfo
+from .audio_manager import get_amplitude
 
 class SettingsDialog(QDialog):
     def __init__(self, manager):
@@ -26,7 +27,7 @@ class SettingsDialog(QDialog):
         self.method_combo = QComboBox()
         self.method_combo.addItem("Tone", "tone")
         self.method_combo.addItem(
-            "White noise (not implemented yet)", "noise"
+            "Noise (not implemented yet)", "noise"
         )
         self.method_combo.addItem(
             "MP3 file (not implemented yet)", "mp3"
@@ -55,7 +56,9 @@ class SettingsDialog(QDialog):
         if index >= 0:
             self.tone_combo.setCurrentIndex(index)
 
-        form.addRow("Tone mode:", self.tone_combo)
+        #form.addRow("Tone mode:", self.tone_combo)
+        self.mode_label = QLabel("Tone mode:")
+        form.addRow(self.mode_label, self.tone_combo)
 
         # Custom amplitude
         self.amplitude_spin = QDoubleSpinBox()
@@ -97,6 +100,9 @@ class SettingsDialog(QDialog):
             self.update_controls
         )
         self.method_combo.currentIndexChanged.connect(
+            self.update_method_options
+        )
+        self.method_combo.currentIndexChanged.connect(
             self.update_status
         )
 
@@ -105,12 +111,54 @@ class SettingsDialog(QDialog):
         self.stop_button.clicked.connect(self.stop_audio)
         self.close_button.clicked.connect(self.close)
 
+        self.update_method_options()
         self.update_controls()
         self.update_status()
 
     def update_controls(self, *_):
         is_custom = self.tone_combo.currentData() == "custom"
         self.amplitude_spin.setEnabled(is_custom)
+    def update_method_options(self, *_):
+        method = self.method_combo.currentData()
+        previous_value = self.tone_combo.currentData()
+
+        self.tone_combo.blockSignals(True)
+        self.tone_combo.clear()
+
+        if method == "noise":
+            self.mode_label.setText("Noise type:")
+            self.tone_combo.addItem("White noise", "white")
+            self.tone_combo.addItem("Pink noise", "pink")
+            self.tone_combo.addItem("Brown noise", "brown")
+
+            # Restore the previous noise type if possible.
+            index = self.tone_combo.findData(previous_value)
+            if index < 0:
+                index = 0
+            self.tone_combo.setCurrentIndex(index)
+
+        else:
+            self.mode_label.setText("Tone mode:")
+            self.tone_combo.addItem("Loud tone", "tone")
+            self.tone_combo.addItem(
+                "Very quiet tone (try this if silence doesn't work!)",
+                "inaudible",
+            )
+            self.tone_combo.addItem("Silence", "silent")
+            self.tone_combo.addItem("Custom amplitude", "custom")
+
+            index = self.tone_combo.findData(previous_value)
+            if index < 0:
+                index = self.tone_combo.findData(
+                    self.manager.config.get("tone_mode", "inaudible")
+                )
+            if index < 0:
+                index = 1
+            self.tone_combo.setCurrentIndex(index)
+
+        self.tone_combo.blockSignals(False)
+        self.update_controls()
+
 
     def update_status(self, *_):
         method = self.method_combo.currentData()
@@ -126,18 +174,24 @@ class SettingsDialog(QDialog):
             status = "Tone audio stream is running."
 
         self.status_label.setText(status)
-
     def apply_settings(self):
         settings = dict(self.manager.config)
+        method = self.method_combo.currentData()
 
-        settings["method"] = self.method_combo.currentData()
-        settings["tone_mode"] = self.tone_combo.currentData()
-        settings["custom_amplitude"] = (
-            self.amplitude_spin.value()
-        )
+        settings["method"] = method
+
+        if method == "noise":
+            settings["noise_type"] = self.tone_combo.currentData()
+        else:
+            settings["tone_mode"] = self.tone_combo.currentData()
+
+        settings["custom_amplitude"] = self.amplitude_spin.value()
 
         try:
-            mw.addonManager.writeConfig(__name__, settings)
+            # __name__ here is the submodule name, so use the add-on root.
+            mw.addonManager.writeConfig(
+                __name__.split(".")[0], settings
+            )
         except Exception as exc:
             showInfo(f"Could not save settings:\n{exc}")
             return

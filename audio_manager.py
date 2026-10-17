@@ -7,7 +7,7 @@ from aqt.qt import QTimer
 from aqt.utils import showInfo
 from PyQt6.QtMultimedia import QAudio, QAudioSink, QMediaDevices
 
-
+from .noise_player import NoisePlayer
 AMPLITUDE_OPTIONS = {
     "tone": 0.01,
     "inaudible": 0.00001,
@@ -46,6 +46,7 @@ class AudioManager:
         self.frame_index = 0
 
         self.amplitude = get_amplitude(self.config)
+        self.noise_player = NoisePlayer(self.amplitude)
         self.running = False
 
     def start(self):
@@ -114,11 +115,18 @@ class AudioManager:
     def set_config(self, settings):
         self.config = dict(settings)
         self.amplitude = get_amplitude(self.config)
+        self.noise_player.set_amplitude(self.amplitude)
 
         # The existing stream uses self.amplitude for every new chunk,
         # so changes take effect without creating another stream.
-
     def make_chunk(self):
+        if self.config.get("method", "tone") == "noise":
+            return self.noise_player.make_chunk(
+                self.frame_count,
+                self.sample_rate,
+                self.channels,
+            )
+
         samples = []
 
         for i in range(self.frame_count):

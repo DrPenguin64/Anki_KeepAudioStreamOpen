@@ -17,25 +17,6 @@ config.setdefault("tone_mode", "inaudible")
 config.setdefault("custom_amplitude", 0.001)
 
 
-AMPLITUDE_OPTIONS = {
-    "tone": 0.01,
-    "inaudible": 0.00001,
-    "silent": 0.0,
-}
-
-
-def get_amplitude(settings):
-    mode = settings.get("tone_mode", "inaudible")
-
-    if mode == "custom":
-        try:
-            value = float(settings.get("custom_amplitude", 0.001))
-        except (TypeError, ValueError):
-            value = 0.001
-
-        return max(0.0, min(value, 1.0))
-
-    return AMPLITUDE_OPTIONS.get(mode, 0.00001)
 
 
 
