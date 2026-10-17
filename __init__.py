@@ -7,6 +7,25 @@ from aqt.qt import QTimer
 from aqt.utils import showInfo
 from PyQt6.QtMultimedia import QAudio, QAudioSink, QMediaDevices
 
+# Read config file
+config = mw.addonManager.getConfig(__name__) or {}
+
+tone_mode = config.get("tone_mode", "quiet") # options = quiet, loud, silent, custom
+custom_amplitude = float(config.get("custom_amplitude", 0.00001))
+# supported options:
+amplitude_options = {
+    "tone" : 0.001,
+    "inaudible": 0.00001,
+    "silent": 0.0,
+    "custom": custom_amplitude # not actually used
+}
+
+ACTUAL_Amplitude = (
+    amplitude_options.get(tone_mode, 0.00001)
+    if tone_mode != "custom"
+    else max(0.0, min(custom_amplitude, 1.0))
+)
+
 device = QMediaDevices.defaultAudioOutput()
 fmt = device.preferredFormat()
 
@@ -29,7 +48,7 @@ else:
 
         samples = []
         for i in range(frame_count):
-            value = 0.001 * math.sin(
+            value = ACTUAL_Amplitude * math.sin(
                 2 * math.pi * 997 * (frame_index + i) / sample_rate
             )
             samples.extend([value] * channels)
@@ -61,6 +80,7 @@ else:
     mw._audio_test_output = output
     mw._audio_test_timer = timer
 
+'''
     def finish_test():
         timer.stop()
         state = sink.state()
@@ -73,3 +93,4 @@ else:
         )
 
     QTimer.singleShot(10000, finish_test)
+'''
