@@ -26,7 +26,7 @@ def get_amplitude(settings):
 
         return max(0.0, min(value, 1.0))
 
-    return AMPLITUDE_OPTIONS.get(mode, 0.00001)
+    return AMPLITUDE_OPTIONS.get(mode)
 
 
 class AudioManager:
@@ -46,7 +46,10 @@ class AudioManager:
         self.frame_index = 0
 
         self.amplitude = get_amplitude(self.config)
-        self.noise_player = NoisePlayer(self.amplitude)
+        self.noise_player = NoisePlayer(
+            float(self.config.get("noise_volume", 0.1))
+        )
+        #self.noise_player = NoisePlayer(self.amplitude)
         self.running = False
 
     def start(self):
@@ -115,7 +118,11 @@ class AudioManager:
     def set_config(self, settings):
         self.config = dict(settings)
         self.amplitude = get_amplitude(self.config)
-        self.noise_player.set_amplitude(self.amplitude)
+
+        noise_volume = float(
+            self.config.get("noise_volume", 0.1)
+        )
+        self.noise_player.set_amplitude(noise_volume)
 
         # The existing stream uses self.amplitude for every new chunk,
         # so changes take effect without creating another stream.

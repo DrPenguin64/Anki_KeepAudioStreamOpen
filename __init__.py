@@ -15,7 +15,7 @@ config = mw.addonManager.getConfig(__name__) or {}
 config.setdefault("method", "tone")
 config.setdefault("tone_mode", "inaudible")
 config.setdefault("custom_amplitude", 0.001)
-
+config.setdefault("noise_volume", 0.1)
 
 
 
