@@ -2,6 +2,8 @@
 import math
 import struct
 
+# Working version
+
 from aqt import mw
 from aqt.qt import QTimer
 from aqt.utils import showInfo
