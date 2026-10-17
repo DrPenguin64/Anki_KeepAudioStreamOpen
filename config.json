@@ -1,5 +1,7 @@
 {
-    // Options: tone, inaudible, silent, or custom
+
+    "method": "tone",
+
     "tone_mode": "inaudible",
-    "custom_amplitude": 0.001 // this is ignored unless tone_mode='custom'
+    "custom_amplitude": 0.001
 }
